@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="pl" class="h-full bg-slate-900 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Słownikowy Pomocnik - Anagramy i Scrabble</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fonty Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="h-full font-sans antialiased flex flex-col justify-between">
+
+    <!-- Header / Navbar -->
+    <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-brand-600 to-indigo-500 p-2.5 rounded-xl shadow-lg shadow-brand-500/20">
+                    <i data-lucide="spell-check" class="w-6 h-6 text-white"></i>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-xl tracking-tight text-white flex items-center gap-2">
+                        Słownikowy Pomocnik
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-400 border border-brand-500/20">PL</span>
+                    </h1>
+                    <p class="text-xs text-slate-400">Anagramy, Scrabble, Literaki</p>
+                </div>
+            </div>
+
+            <!-- Full Dictionary Load Button -->
+            <button id="loadFullDictBtn" onclick="loadFullDictionary()" class="text-xs font-medium px-3 py-2 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 transition-all flex items-center gap-2">
+                <i data-lucide="download" class="w-4 h-4 text-brand-400" id="downloadIcon"></i>
+                <span id="dictStatusText">Załaduj pełny słownik (SJP)</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-6xl mx-auto px-4 py-8 flex-1 w-full space-y-8">
+
+        <!-- Controls Card -->
+        <div class="bg-slate-800/60 border border-slate-700/60 rounded-2xl p-6 shadow-xl backdrop-blur-xl">
+            <form id="searchForm" onsubmit="event.preventDefault(); runSearch();" class="space-y-6">
+                <!-- Input Box -->
+                <div>
+                    <label for="lettersInput" class="block text-sm font-medium text-slate-300 mb-2">
+                        Wpisz posiadane litery:
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="lettersInput" placeholder="np. k-a-r-t-o-n lub karton..." autocomplete="off" spellcheck="false"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3.5 pr-28 text-lg font-semibold tracking-wider text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all uppercase">
+                        <button type="button" onclick="clearInput()" class="absolute right-14 top-1/2 -translate-y-1/2 p-2 text-slate-400 hover:text-white transition-colors" title="Wyczyść">
+                            <i data-lucide="x" class="w-5 h-5"></i>
+                        </button>
+                        <button type="submit" class="absolute right-2 top-1/2 -translate-y-1/2 bg-brand-600 hover:bg-brand-500 text-white p-2.5 rounded-lg transition-all shadow-md shadow-brand-600/30">
+                            <i data-lucide="search" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Toggle Options -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                    <!-- Option 1: Use All Letters -->
+                    <label class="flex items-center justify-between p-4 bg-slate-900/60 border border-slate-700/50 rounded-xl cursor-pointer hover:border-slate-600 transition-all select-none">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                                <i data-lucide="layers" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm text-slate-200">Użyj wszystkich liter</div>
+                                <div class="text-xs text-slate-400">Słowo musi zawierać każdą wpisaną literę</div>
+                            </div>
+                        </div>
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="useAllToggle" class="sr-only peer" onchange="runSearch()">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                        </div>
+                    </label>
+
+                    <!-- Option 2: Allow Letter Repetition -->
+                    <label class="flex items-center justify-between p-4 bg-slate-900/60 border border-slate-700/50 rounded-xl cursor-pointer hover:border-slate-600 transition-all select-none">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+                                <i data-lucide="repeat" class="w-5 h-5"></i>
+                            </div>
+                            <div>
+                                <div class="font-semibold text-sm text-slate-200">Możesz powtarzać litery</div>
+                                <div class="text-xs text-slate-400">Możesz używać liter więcej niż raz</div>
+                            </div>
+                        </div>
+                        <div class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="repeatToggle" class="sr-only peer" onchange="runSearch()">
+                            <div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-brand-600"></div>
+                        </div>
+                    </label>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="space-y-6 hidden">
+            <!-- Stats & Filtering Bar -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-800/40 p-4 rounded-xl border border-slate-800">
+                <div class="flex items-center gap-3">
+                    <span class="text-slate-400 text-sm">Znalezione słowa:</span>
+                    <span id="resultsCountBadge" class="bg-brand-500/20 text-brand-300 font-bold px-3 py-1 rounded-full text-sm border border-brand-500/30">
+                        0
+                    </span>
+                    <span id="dictInfoBadge" class="text-xs text-slate-500 border-l border-slate-700 pl-3">
+                        Słownik: Szybki (wbudowany)
+                    </span>
+                </div>
+
+                <!-- Result Controls: Sort & Filter -->
+                <div class="flex items-center gap-3">
+                    <!-- Internal Result Search -->
+                    <div class="relative flex-1 sm:w-48">
+                        <input type="text" id="filterResultInput" placeholder="Filtruj wyniki..." oninput="renderResults()"
+                            class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                    </div>
+
+                    <!-- Sort Select -->
+                    <select id="sortBySelect" onchange="renderResults()" class="bg-slate-900 border border-slate-700 text-xs text-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-brand-500">
+                        <option value="length">Wg długości</option>
+                        <option value="points">Wg punktacji</option>
+                        <option value="alpha">Alfapetycznie</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Grouped Word Lists Container -->
+            <div id="wordsContainer" class="space-y-6">
+                <!-- Dynamically Populated -->
+            </div>
+        </div>
+
+        <!-- Empty State / Instructions -->
+        <div id="emptyState" class="text-center py-12 px-4 rounded-2xl bg-slate-800/20 border border-dashed border-slate-800">
+            <i data-lucide="sparkles" class="w-12 h-12 text-slate-600 mx-auto mb-3 animate-pulse"></i>
+            <h3 class="text-slate-300 font-medium text-lg">Wpisz litery powyżej, aby znaleźć słowa</h3>
+            <p class="text-slate-500 text-sm max-w-md mx-auto mt-1">
+                Obsługiwane są polskie znaki. Możesz włączyć opcję powtarzania liter lub wymóg użycia całego zestawu.
+            </p>
+        </div>
+
+        <!-- No Results Found -->
+        <div id="noResultsState" class="text-center py-12 px-4 rounded-2xl bg-slate-800/20 border border-slate-800 hidden">
+            <i data-lucide="file-question" class="w-12 h-12 text-slate-500 mx-auto mb-3"></i>
+            <h3 class="text-slate-300 font-medium text-lg">Brak pasujących słów</h3>
+            <p class="text-slate-500 text-sm max-w-md mx-auto mt-1">
+                Spróbuj zmienić wprowadzone litery lub wyłączyć ograniczające opcje.
+            </p>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800/60 bg-slate-950/40 py-6 text-center text-xs text-slate-500">
+        <p>Aplikacja gotowa dla GitHub Pages. Wykorzystuje dane polskiego słownika SJP / Scrabble.</p>
+    </footer>
+
+    <!-- Logic & Word Search Algorithms -->
+    <script>
+        // Scrabble Points Mapping (Polish)
+        const LETTER_POINTS = {
+            'A':1, 'E':1, 'I':1, 'N':1, 'O':1, 'R':1, 'S':1, 'W':1, 'Z':1,
+            'C':2, 'D':2, 'K':2, 'L':2, 'M':2, 'P':2, 'T':2, 'Y':2,
+            'B':3, 'G':3, 'H':3, 'J':3, 'Ł':3, 'U':3,
+            'Ą':5, 'Ę':5, 'F':5, 'Ó':5, 'Ś':5, 'Ż':5,
+             me:'Ć', 'Ć':6, 'Ń':6, 'Ź':7, 'V':10, 'X':10, 'Q':10
+        };
+
+        // Built-in starter dictionary (~1500 common Polish words for instant offline availability)
+        const BUILTIN_WORDS = [
+            "KARTON", "KOT", "PIES", "DOM", "KARTA", "KROK", "TORT", "TAKA", "ROK", "KORA", "NORA",
+            "RONDO", "DOBRO", "ROBOT", "BAR", "RABAT", "TRAMWAJ", "ROWER", "MIASTO", "PRACA",
+            "SŁOWO", "LITERA", "EKRAN", "KOD", "WODA", "OGIEŃ", "ZIEMIA", "POWIETRZE", "SŁOŃCE",
+            "KSIĄŻKA", "SZKOŁA", "TESTR", "BRAMA", "ZEGAR", "OKNO", "DRZWI", "KWIAT", "TRAWA",
+            "DRZEWO", "OWOC", "JABŁKO", "GRUSZKA", "ŚLIWKA", "ARBUZ", "BANAN", "CHLEB", "MLEKO",
+            "SER", "MASŁO", "KAWA", "HERBATA", "SOK", "CUKIER", "SÓL", "PIEPRZ", "TALERZ", "KUBEK",
+            "ŁYŻKA", "WIDELEC", "NÓŻ", "STÓŁ", "KRZESŁO", "ŁÓŻKO", "SZAFA", "PÓŁKA", "DYWAN",
+            "LAMPA", "OBRAZ", "LUSTERKO", "ŚCIANA", "SUFIT", "PODŁOGA", "DACH", "KOMIN", "OGRÓD",
+            "PARK", "LAS", "RZEKA", "JEZIORO", "MORZE", "GÓRA", "DOLINA", "POLE", "DROGA", "ULICA",
+            "MOST", "AUTO", "AUTOBUS", "POCIĄG", "SAMOLOT", "STATEK", "PILOT", "KIEROWCA", "LEKARZ",
+            "NAUCZYCIEL", "STUDENT", "DZIECKO", "MĄŻ", "ŻONA", "OJCIEC", "MATKA", "BRAT", "SIOSTRA",
+            "BABCIA", "DZIADEK", "WUJEC", "CIOĆA", "PIESEK", "KOTEK", "PTAK", "RYBA", "KOŃ", "KROVA",
+            "OWCA", "KOZA", "ŚWINIA", "KURA", "KACZKA", "GĘŚ", "ZAJĄC", "LIS", "WILK", "NIEDŻWIEDŹ",
+            "JELEN", "SARNA", "DZIK", "MYSZ", "SZCZUR", "ŻABA", "WĄŻ", "MOTYL", "PSZCZOŁA", "MRÓWKA",
+            "ANANAS", "ANAGRAM", "SCRABBLE", "LITERAKI", "GRA", "WYNIK", "PUNKT", "SZUKAJ", "POMOC",
+            "LISTA", "OPCJA", "KLUCZ", "ZNAK", "Zbiór", "TEKST", "POLSKA", "JĘZYK", "SŁOWNIK"
+        ];
+
+        let activeDictionary = BUILTIN_WORDS.map(w => w.toUpperCase());
+        let currentResults = [];
+        let isFullDictLoaded = false;
+
+        // Initialize Lucide Icons
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+        });
+
+        // Calculate Scrabble score for a word
+        function calculatePoints(word) {
+            let pts = 0;
+            for (const char of word.toUpperCase()) {
+                pts += LETTER_POINTS[char] || 1;
+            }
+            return pts;
+        }
+
+        // Count character frequencies
+        function getCharCounts(str) {
+            const counts = {};
+            for (const char of str.toUpperCase()) {
+                if (char >= 'A' && char <= 'Z' || 'ĄĆĘŁŃÓŚŹŻ'.includes(char)) {
+                    counts[char] = (counts[char] || 0) + 1;
+                }
+            }
+            return counts;
+        }
+
+        // Search Algorithm
+        function runSearch() {
+            const rawInput = document.getElementById('lettersInput').value;
+            const inputClean = rawInput.toUpperCase().replace(/[^A-ZĄĆĘŁŃÓŚŹŻ]/g, '');
+
+            if (!inputClean) {
+                document.getElementById('resultsSection').classList.add('hidden');
+                document.getElementById('emptyState').classList.remove('hidden');
+                document.getElementById('noResultsState').classList.add('hidden');
+                return;
+            }
+
+            const inputCounts = getCharCounts(inputClean);
+            const inputLen = inputClean.length;
+            const useAll = document.getElementById('useAllToggle').checked;
+            const allowRepeat = document.getElementById('repeatToggle').checked;
+
+            const matchedWords = [];
+
+            for (let i = 0; i < activeDictionary.length; i++) {
+                const word = activeDictionary[i];
+                const wordLen = word.length;
+
+                // Check length constraints
+                if (useAll && !allowRepeat && wordLen !== inputLen) continue;
+                if (useAll && allowRepeat && wordLen < inputLen) continue;
+
+                const wordCounts = getCharCounts(word);
+                let isValid = true;
+
+                if (useAll) {
+                    // Word must contain AT LEAST all input letters
+                    for (const char in inputCounts) {
+                        if (!wordCounts[char] || wordCounts[char] < inputCounts[char]) {
+                            isValid = false;
+                            break;
+                        }
+                    }
+                    if (isValid && !allowRepeat) {
+                        // Must match exact count
+                        for (const char in wordCounts) {
+                            if (wordCounts[char] !== inputCounts[char]) {
+                                isValid = false;
+                                break;
+                            }
+                        }
+                    }
+                } else {
+                    // Standard Scrabble check: word must be buildable from input letters
+                    for (const char in wordCounts) {
+                        if (!inputCounts[char]) {
+                            isValid = false; // Letter not in input
+                            break;
+                        }
+                        if (!allowRepeat && wordCounts[char] > inputCounts[char]) {
+                            isValid = false; // Used too many times
+                            break;
+                        }
+                    }
+                }
+
+                if (isValid) {
+                    matchedWords.push({
+                        word: word,
+                        points: calculatePoints(word),
+                        length: word.length
+                    });
+                }
+            }
+
+            currentResults = matchedWords;
+            renderResults();
+        }
+
+        // Render Search Results
+        function renderResults() {
+            const container = document.getElementById('wordsContainer');
+            const filterValue = document.getElementById('filterResultInput').value.toLowerCase().trim();
+            const sortBy = document.getElementById('sortBySelect').value;
+
+            // Filter results if search box inside results is used
+            let filtered = currentResults.filter(item => item.word.toLowerCase().includes(filterValue));
+
+            // Sorting logic
+            if (sortBy === 'points') {
+                filtered.sort((a, b) => b.points - a.points || b.length - a.length || a.word.localeCompare(b.word, 'pl'));
+            } else if (sortBy === 'alpha') {
+                filtered.sort((a, b) => a.word.localeCompare(b.word, 'pl'));
+            } else {
+                // Default: by length (descending)
+                filtered.sort((a, b) => b.length - a.length || b.points - a.points || a.word.localeCompare(b.word, 'pl'));
+            }
+
+            // Update stats UI
+            document.getElementById('resultsCountBadge').innerText = filtered.length;
+            document.getElementById('emptyState').classList.add('hidden');
+
+            if (filtered.length === 0) {
+                document.getElementById('resultsSection').classList.add('hidden');
+                document.getElementById('noResultsState').classList.remove('hidden');
+                return;
+            }
+
+            document.getElementById('noResultsState').classList.add('hidden');
+            document.getElementById('resultsSection').classList.remove('hidden');
+
+            // Group results by length or points depending on sort mode
+            const groups = {};
+            filtered.forEach(item => {
+                const key = sortBy === 'points' ? `${item.points} pkt` : `${item.length} litery`;
+                if (!groups[key]) groups[key] = [];
+                groups[key].push(item);
+            });
+
+            // Build HTML markup
+            let html = '';
+            for (const groupTitle in groups) {
+                const list = groups[groupTitle];
+                html += `
+                    <div class="bg-slate-800/40 border border-slate-700/50 rounded-xl p-5">
+                        <div class="flex items-center gap-2 mb-3 pb-2 border-b border-slate-700/50">
+                            <span class="text-sm font-bold text-brand-400">${groupTitle}</span>
+                            <span class="text-xs text-slate-500">(${list.length})</span>
+                        </div>
+                        <div class="flex flex-wrap gap-2.5">
+                            ${list.map(w => `
+                                <div class="bg-slate-900/90 border border-slate-700/80 hover:border-brand-500/50 px-3 py-1.5 rounded-lg flex items-center gap-2 transition-all hover:scale-105 group cursor-default">
+                                    <span class="font-bold tracking-wider text-slate-100 group-hover:text-brand-300 text-sm">${w.word}</span>
+                                    <span class="text-[10px] font-semibold bg-slate-800 text-slate-400 px-1.5 py-0.5 rounded border border-slate-700">${w.points}p</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        // Load Full Polish Dictionary from external CDN / GitHub
+        async function loadFullDictionary() {
+            const btnText = document.getElementById('dictStatusText');
+            const icon = document.getElementById('downloadIcon');
+            
+            if (isFullDictLoaded) return;
+
+            btnText.innerText = 'Pobieranie SJP...';
+            icon.classList.add('animate-spin');
+
+            try {
+                // Fetch dictionary file from reliable open-source Polish word list
+                const response = await fetch('https://cdn.jsdelivr.net/gh/kxert/polish-dictionary@master/words.txt');
+                if (!response.ok) throw new Error('Błąd sieci');
+                
+                const text = await response.text();
+                const words = text.split(/\r?\n/).map(w => w.trim().toUpperCase()).filter(w => w.length > 1);
+
+                if (words.length > 0) {
+                    activeDictionary = words;
+                    isFullDictLoaded = true;
+                    btnText.innerText = `Słownik SJP (${(words.length / 1000).toFixed(0)}k słów)`;
+                    document.getElementById('dictInfoBadge').innerText = `Słownik: Pełny SJP (${words.length.toLocaleString('pl-PL')} słów)`;
+                    document.getElementById('loadFullDictBtn').classList.replace('border-slate-700', 'border-emerald-500/40');
+                    document.getElementById('loadFullDictBtn').classList.add('bg-emerald-500/10', 'text-emerald-400');
+                    
+                    // Re-run search with full dictionary if user already entered letters
+                    runSearch();
+                }
+            } catch (err) {
+                console.error("Nie udało się pobrać pełnego słownika:", err);
+                btnText.innerText = 'Błąd pobierania (używam starter)';
+            } finally {
+                icon.classList.remove('animate-spin');
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('lettersInput').value = '';
+            runSearch();
+            document.getElementById('lettersInput').focus();
+        }
+    </script>
+</body>
+</html>
